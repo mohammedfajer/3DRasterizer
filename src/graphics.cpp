@@ -3,12 +3,19 @@
 #include <SDL.h>
 #include "stb_image.h"
 
-int Graphics_loadImage(const char *filename, u32 **pixels, int *width, int *height) {
+// Define global variables here
+int windowWidth = 800;
+int windowHeight = 600;
+SDL_Window* window = nullptr;
+
+int Graphics_loadImage(const char *filename, u32 **pixels, int *width, int *height) 
+{
     // Load the image using stb_image
     int channels;
     unsigned char *data = stbi_load(filename, width, height, &channels, 4); // 4 channels for RGBA
 
-    if (data == NULL) {
+    if (data == NULL) 
+    {
         printf("Error: Failed to load image: %s\n", filename);
         printf("stbi_error: %s\n", stbi_failure_reason());  // This prints a more detailed error message
 
@@ -18,15 +25,18 @@ int Graphics_loadImage(const char *filename, u32 **pixels, int *width, int *heig
     // Allocate memory for the pixel data in u32 format
     *pixels = (u32*)malloc((*width) * (*height) * sizeof(u32));
 
-    if (*pixels == NULL) {
+    if (*pixels == NULL) 
+    {
         printf("Error: Failed to allocate memory for pixel data.\n");
         stbi_image_free(data);
         return 0; // Memory allocation failed
     }
 
     // Convert from 8-bit RGBA to 32-bit format (u32 = 0xAARRGGBB)
-    for (int y = 0; y < *height; y++) {
-        for (int x = 0; x < *width; x++) {
+    for (int y = 0; y < *height; y++) 
+    {
+        for (int x = 0; x < *width; x++) 
+        {
             int idx = (y * *width + x) * 4;
             u32 pixel = (data[idx + 3] << 24) | (data[idx + 0] << 16) | (data[idx + 1] << 8) | data[idx + 2];
             (*pixels)[y * (*width) + x] = pixel;
@@ -35,6 +45,7 @@ int Graphics_loadImage(const char *filename, u32 **pixels, int *width, int *heig
 
     // Free the raw image data
     stbi_image_free(data);
+    
     return 1; // Success
 }
 
@@ -82,7 +93,6 @@ void Graphics_drawLine(FrameBuffer buffer, i32 x0, i32 y0, i32 x1, i32 y1, u32 c
     while (true) 
     {
         Graphics_setPixel(buffer, x0, y0, color); // Draw pixel
-
         if (x0 == x1 && y0 == y1) break;
 
         i32 e2 = 2 * err;
@@ -91,6 +101,7 @@ void Graphics_drawLine(FrameBuffer buffer, i32 x0, i32 y0, i32 x1, i32 y1, u32 c
             err -= dy;
             x0 += sx;
         }
+
         if (e2 < dx) 
         {
             err += dx;
@@ -123,7 +134,8 @@ void Graphics_drawBackgroundGrid(FrameBuffer &buffer, i32 step, GRID_MODE mode)
     }
 }
 
-void Graphics_drawRectangle(FrameBuffer &buffer, i32 x0, i32 y0, i32 w, i32 h, u32 color, RECT_MODE mode)
+void Graphics_drawRectangle(FrameBuffer &buffer, i32 x0, i32 y0, i32 w, i32 h,
+     u32 color, RECT_MODE mode)
 {
     for(int x = x0; x <= x0 + w; x++)
     {
@@ -144,13 +156,15 @@ void Graphics_drawRectangle(FrameBuffer &buffer, i32 x0, i32 y0, i32 w, i32 h, u
     }
 }
 
-void Graphics_blitColorBufferToWindow(SDL_Window *window, SDL_Surface *windowSurface, FrameBuffer &buffer)
+void Graphics_blitColorBufferToWindow(SDL_Window *window, SDL_Surface *windowSurface,
+     FrameBuffer &buffer)
 {
     memcpy(windowSurface->pixels, buffer.buffer, buffer.width * buffer.height * sizeof(u32));
     SDL_UpdateWindowSurface(window);
 }
 
-void Graphics_blitImageToBuffer(FrameBuffer &buffer, u32 *imgPixels, int imgW, int imgH, int x, int y, int w, int h)
+void Graphics_blitImageToBuffer(FrameBuffer &buffer, u32 *imgPixels, int imgW,
+     int imgH, int x, int y, int w, int h)
 {
     // Ensure the destination area doesn't go beyond the framebuffer boundaries
     int destX = x;
@@ -158,24 +172,30 @@ void Graphics_blitImageToBuffer(FrameBuffer &buffer, u32 *imgPixels, int imgW, i
     int destW = w;
     int destH = h;
 
-    if (destX < 0) {
+    if (destX < 0) 
+    {
         destW += destX; // Adjust width if x is out of bounds
         destX = 0;
     }
-    if (destY < 0) {
+    if (destY < 0) 
+    {
         destH += destY; // Adjust height if y is out of bounds
         destY = 0;
     }
-    if (destX + destW > buffer.width) {
+    if (destX + destW > buffer.width) 
+    {
         destW = buffer.width - destX; // Ensure we don't go beyond the right edge
     }
-    if (destY + destH > buffer.height) {
+    if (destY + destH > buffer.height) 
+    {
         destH = buffer.height - destY; // Ensure we don't go beyond the bottom edge
     }
 
     // Blit pixels from the image to the framebuffer
-    for (int j = 0; j < destH; ++j) {
-        for (int i = 0; i < destW; ++i) {
+    for (int j = 0; j < destH; ++j) 
+    {
+        for (int i = 0; i < destW; ++i) 
+        {
             int imgX = i * imgW / w; // Map the destination pixel to the image pixel
             int imgY = j * imgH / h; // Map the destination pixel to the image pixel
 
@@ -185,5 +205,33 @@ void Graphics_blitImageToBuffer(FrameBuffer &buffer, u32 *imgPixels, int imgW, i
             // Copy the color to the framebuffer at the destination position
             buffer.buffer[(destY + j) * buffer.width + (destX + i)] = pixelColor;
         }
+    }
+}
+
+void Graphics_initializeWindow()
+{
+    // Initialize SDL
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
+        return;
+    }
+  
+    SDL_DisplayMode displayMode;
+    SDL_GetCurrentDisplayMode(0, &displayMode);
+    
+    windowWidth = displayMode.w;
+    windowHeight = displayMode.h;
+    
+    // Create a window
+    window = SDL_CreateWindow("3D Rasterizer", 
+                                          SDL_WINDOWPOS_CENTERED, 
+                                          SDL_WINDOWPOS_CENTERED, 
+                                          windowWidth, windowHeight, 
+                                          SDL_WINDOW_BORDERLESS);
+    if (window == NULL) 
+    {
+        printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
+        SDL_Quit();
+        return;
     }
 }
