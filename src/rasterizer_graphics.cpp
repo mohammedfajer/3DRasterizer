@@ -17,7 +17,13 @@ SDL_Surface *windowSurface = nullptr;
 const int M_POINTS = 9 * 9 * 9;
 Vector3 cloudOfPoints[M_POINTS];
 Vector2 projectedPoints[M_POINTS];
-float fovFactor = 128;
+float fovFactor = 128 * 6;
+Vector3 cameraPosition = {0, 0, -5};
+
+// Bitmap Testing
+u32 *pixels;
+int w, h;
+    
 
 int Graphics_loadImage(const char *filename, u32 **pixels, int *width, int *height) 
 {
@@ -269,6 +275,8 @@ void Graphics_initializeWindow()
             }
         }
     }
+
+    Graphics_loadImage("./res/t.jpeg", &pixels, &w, &h);
 }
 
 void Graphics_processInput()
@@ -295,9 +303,8 @@ void Graphics_update()
     for(int i = 0; i < M_POINTS; i++)
     {
         Vector3 point = cloudOfPoints[i];
-        // Scale and Position
-        // We can have this in the Project Project Vector
-       
+
+        point.z -= cameraPosition.z;
 
         // Screen Space Coordinate
         Vector2 projectedPoint = Graphics_project(point, PERSPECTIVE);
@@ -309,11 +316,32 @@ void Graphics_update()
     }
 }
 
+// Darken color based on z-value
+u32 Graphics_darkenColor(u32 color, float z) 
+{
+    // Extract ARGB components
+    u8 alpha = (color >> 24) & 0xFF;
+    u8 red = (color >> 16) & 0xFF;
+    u8 green = (color >> 8) & 0xFF;
+    u8 blue = color & 0xFF;
+
+    // Calculate darkening factor based on z (inverted, so larger z means darker)
+    float factor = 1.0f - z;  // Darker for larger z values
+
+    // Apply the factor to each color component
+    red = (u8)(red * factor);
+    green = (u8)(green * factor);
+    blue = (u8)(blue * factor);
+
+    // Reconstruct the color with darkened RGB values
+    return (alpha << 24) | (red << 16) | (green << 8) | blue;
+}
+
 void Graphics_render()
 {
     Graphics_clearFrameBuffer(buffer, 0xFF000000);
        
-    //Graphics_drawBackgroundGrid(buffer, 10, DOTS);
+    Graphics_drawBackgroundGrid(buffer, 10, DOTS);
     Graphics_drawRectangle(buffer, 100, 100, 20, 10, 0xFFFF0000, OUTLINE);
 
     Graphics_drawRectangle(buffer, 300, 200, 300, 150, 0xFFFF00FF, FILL);
@@ -323,16 +351,21 @@ void Graphics_render()
     {
         Vector2 point = projectedPoints[i];
 
-        Graphics_drawRectangle(buffer, (u32) point.x, (u32) point.y, 5,5, 0xFFF00FFFF, FILL);
+        // Darken color based on z value
+        u32 color = Graphics_darkenColor(0xFFF00FFFF, cloudOfPoints[i].z);
+
+        Graphics_drawRectangle(buffer, (u32) point.x, (u32) point.y, 5,5, color, FILL);
     }
+
+    //Graphics_blitImageToBuffer(buffer, pixels, w, h, 100, 100, w, h);
 
     Graphics_blitColorBufferToWindow(window, windowSurface, buffer);
 }
 
+// We are using Left-Handed Coordinates Handedness
 Vector2 Graphics_project(Vector3 point, PROJECTION_MODE mode)
 {
     Vector2 screenPosition;
-
     switch(mode)
     {
         case ORTHOGRAPHIC:
@@ -351,7 +384,5 @@ Vector2 Graphics_project(Vector3 point, PROJECTION_MODE mode)
 
         } break;
     }
-     
-
     return screenPosition;
 }

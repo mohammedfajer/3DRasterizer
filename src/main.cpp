@@ -9,7 +9,6 @@
 #include "stb_image.h"
 
 #include "rasterizer_graphics.h"
-
 #include "rasterizer_math.h"
 
 int main(int argc, char* argv[]) 
@@ -23,11 +22,8 @@ int main(int argc, char* argv[])
     while (!quit) 
     {    
         Graphics_processInput();
-
         Graphics_update();
-
         Graphics_render();
     }
-
     return 0;
 }

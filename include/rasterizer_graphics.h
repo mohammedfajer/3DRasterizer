@@ -8,6 +8,7 @@
 #define i32 int32_t
 #define globalVariable static
 
+
 struct FrameBuffer
 {
     u32 *buffer;
@@ -60,4 +61,5 @@ extern void         Graphics_update();
 extern void         Graphics_render();
 
 // Naive 3D Virtual World to Screen Space Projection
-extern Vector2         Graphics_project(Vector3 point, PROJECTION_MODE mode);
+extern Vector2         Graphics_project     (Vector3 point, PROJECTION_MODE mode);
+extern u32             Graphics_darkenColor (u32 color, float z);
