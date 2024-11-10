@@ -1,12 +1,21 @@
-#include "graphics.h"
+#include "rasterizer_graphics.h"
 #include <cstring>  // Add this for memcpy
 #include <SDL.h>
 #include "stb_image.h"
 
+#include "rasterizer_math.h"
+
 // Define global variables here
-int windowWidth = 800;
-int windowHeight = 600;
-SDL_Window* window = nullptr;
+int windowWidth      = 800;
+int windowHeight     = 600;
+SDL_Window* window   = nullptr;
+bool quit            = false;
+FrameBuffer buffer;
+SDL_Surface *windowSurface = nullptr;
+
+// Cube Points
+const int M_POINTS = 9 * 9 * 9;
+Vector3 cloudOfPoints[M_POINTS];
 
 int Graphics_loadImage(const char *filename, u32 **pixels, int *width, int *height) 
 {
@@ -38,7 +47,9 @@ int Graphics_loadImage(const char *filename, u32 **pixels, int *width, int *heig
         for (int x = 0; x < *width; x++) 
         {
             int idx = (y * *width + x) * 4;
+            
             u32 pixel = (data[idx + 3] << 24) | (data[idx + 0] << 16) | (data[idx + 1] << 8) | data[idx + 2];
+            
             (*pixels)[y * (*width) + x] = pixel;
         }
     }
@@ -211,7 +222,8 @@ void Graphics_blitImageToBuffer(FrameBuffer &buffer, u32 *imgPixels, int imgW,
 void Graphics_initializeWindow()
 {
     // Initialize SDL
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) 
+    {
         printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
         return;
     }
@@ -234,4 +246,63 @@ void Graphics_initializeWindow()
         SDL_Quit();
         return;
     }
+
+    buffer = Graphics_createColorBuffer(windowWidth, windowHeight);
+
+     // Directly access the window surface and copy the color buffer
+    windowSurface = SDL_GetWindowSurface(window);
+
+
+    // Initialize the Cloud of Points (Position Vectors)
+
+    int pointCount = 0;
+ 
+    for(float x = -1; x <= 1.0; x += 0.25f)
+    {
+        for(float y = -1; y <= 1.0f; y += 0.25f)
+        {
+            for(float z = -1; z <= 1.0f; z += 0.25f)
+            {
+                Vector3 newPoint = {x, y, z};
+
+                cloudOfPoints[pointCount++] = newPoint;
+            }
+        }
+    }
+}
+
+void Graphics_processInput()
+{
+    SDL_Event e;
+
+    // Handle events
+    while (SDL_PollEvent(&e) != 0) 
+    {
+        if (e.type == SDL_QUIT) 
+        {
+            quit = true;
+        }
+        
+        else if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE) 
+        {
+            quit = true;  // Quit the program if Escape key is pressed
+        }
+    }
+}
+
+void Graphics_update()
+{
+    
+}
+
+void Graphics_render()
+{
+    Graphics_clearFrameBuffer(buffer, 0xFF000000);
+       
+    Graphics_drawBackgroundGrid(buffer, 10, DOTS);
+    Graphics_drawRectangle(buffer, 100, 100, 20, 10, 0xFFFF0000, OUTLINE);
+
+    Graphics_drawRectangle(buffer, 300, 200, 300, 150, 0xFFFF00FF, FILL);
+       
+    Graphics_blitColorBufferToWindow(window, windowSurface, buffer);
 }
