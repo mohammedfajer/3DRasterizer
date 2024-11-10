@@ -27,8 +27,16 @@ enum RECT_MODE
     FILL
 };
 
+enum PROJECTION_MODE
+{
+    ORTHOGRAPHIC,
+    PERSPECTIVE
+};
+
 struct SDL_Window;
 struct SDL_Surface;
+struct Vector2;
+struct Vector3;
 
 extern int windowWidth; // Declare global variables with extern
 extern int windowHeight;
@@ -50,3 +58,6 @@ extern void         Graphics_initializeWindow();
 extern void         Graphics_processInput();
 extern void         Graphics_update();
 extern void         Graphics_render();
+
+// Naive 3D Virtual World to Screen Space Projection
+extern Vector2         Graphics_project(Vector3 point, PROJECTION_MODE mode);

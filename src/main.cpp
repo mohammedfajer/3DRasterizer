@@ -19,8 +19,6 @@ int main(int argc, char* argv[])
     // Real Full Screen
     // SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
 
-  
-
     // Event loop
     while (!quit) 
     {    

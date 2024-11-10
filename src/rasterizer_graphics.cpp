@@ -16,6 +16,8 @@ SDL_Surface *windowSurface = nullptr;
 // Cube Points
 const int M_POINTS = 9 * 9 * 9;
 Vector3 cloudOfPoints[M_POINTS];
+Vector2 projectedPoints[M_POINTS];
+float fovFactor = 128;
 
 int Graphics_loadImage(const char *filename, u32 **pixels, int *width, int *height) 
 {
@@ -252,9 +254,7 @@ void Graphics_initializeWindow()
      // Directly access the window surface and copy the color buffer
     windowSurface = SDL_GetWindowSurface(window);
 
-
     // Initialize the Cloud of Points (Position Vectors)
-
     int pointCount = 0;
  
     for(float x = -1; x <= 1.0; x += 0.25f)
@@ -292,17 +292,66 @@ void Graphics_processInput()
 
 void Graphics_update()
 {
-    
+    for(int i = 0; i < M_POINTS; i++)
+    {
+        Vector3 point = cloudOfPoints[i];
+        // Scale and Position
+        // We can have this in the Project Project Vector
+       
+
+        // Screen Space Coordinate
+        Vector2 projectedPoint = Graphics_project(point, PERSPECTIVE);
+
+        projectedPoint.x += windowWidth/2.0f;
+        projectedPoint.y += windowHeight/2.0f;
+
+        projectedPoints[i] = projectedPoint;
+    }
 }
 
 void Graphics_render()
 {
     Graphics_clearFrameBuffer(buffer, 0xFF000000);
        
-    Graphics_drawBackgroundGrid(buffer, 10, DOTS);
+    //Graphics_drawBackgroundGrid(buffer, 10, DOTS);
     Graphics_drawRectangle(buffer, 100, 100, 20, 10, 0xFFFF0000, OUTLINE);
 
     Graphics_drawRectangle(buffer, 300, 200, 300, 150, 0xFFFF00FF, FILL);
        
+    // Draw Projected Points On Screen Plane
+    for(int i = 0; i < M_POINTS; i++)
+    {
+        Vector2 point = projectedPoints[i];
+
+        Graphics_drawRectangle(buffer, (u32) point.x, (u32) point.y, 5,5, 0xFFF00FFFF, FILL);
+    }
+
     Graphics_blitColorBufferToWindow(window, windowSurface, buffer);
+}
+
+Vector2 Graphics_project(Vector3 point, PROJECTION_MODE mode)
+{
+    Vector2 screenPosition;
+
+    switch(mode)
+    {
+        case ORTHOGRAPHIC:
+        {
+            // Naive Orthographic Projection
+            screenPosition = {point.x * fovFactor, point.y * fovFactor};
+        
+        } break;
+
+        case PERSPECTIVE:
+        {
+            screenPosition = {
+                (point.x * fovFactor) / point.z, 
+                (point.y * fovFactor) / point.z
+            };
+
+        } break;
+    }
+     
+
+    return screenPosition;
 }
